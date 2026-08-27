@@ -1,0 +1,26 @@
+{
+	"id": "vhd-vx90",
+	"name": "VHD VX-90 PTZ Camera",
+	"shortname": "vx90",
+	"description": "Control the VHD VX-90 PTZ camera over VISCA/IP (TCP, port 5678 by default).",
+	"version": "1.0.0",
+	"license": "MIT",
+	"repository": "",
+	"bugs": "",
+	"manufacturer": "VHD",
+	"maintainers": [
+		{
+			"name": "AP Audiovisuele Producties",
+			"email": ""
+		}
+	],
+	"runtime": {
+		"type": "node22",
+		"api": "nodejs-ipc",
+		"apiVersion": "1.14.1",
+		"entrypoint": "main.js"
+	},
+	"legacyIds": [],
+	"products": ["VX-90"],
+	"keywords": ["ptz", "camera", "visca", "vhd", "vx90"]
+}

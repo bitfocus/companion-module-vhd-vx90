@@ -1,0 +1,16 @@
+{
+  "name": "companion-module-vhd-vx90",
+  "version": "1.0.0",
+  "main": "main.js",
+  "license": "MIT",
+  "type": "commonjs",
+  "dependencies": {
+    "@companion-module/base": "^1.11.0"
+  },
+  "devDependencies": {
+    "@companion-module/tools": "^2.6.1"
+  },
+  "scripts": {
+    "test": "echo \"no tests yet\""
+  }
+}
