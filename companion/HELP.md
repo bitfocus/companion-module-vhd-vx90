@@ -43,9 +43,6 @@ VISCA module; this module implements them directly.
   exactly what they say — use with care, ideally behind a confirmation
   step in your button setup.
 
-A PDF version of this file (and of the install/test guide) is included
-alongside this module for easier reading outside Companion.
-
 ## Support
 
 Internal module built for AP Audiovisuele Producties. For questions
