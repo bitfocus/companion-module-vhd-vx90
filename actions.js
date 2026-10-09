@@ -513,6 +513,136 @@ function getActionDefinitions(instance) {
 	actions.setting_reset = simple('Restore Menu Defaults', [0x01, 0x04, 0xa0, 0x10])
 	actions.net_reset = simple('Factory Reset IP + Password [VHD-ext]', [0x0a, 0x01, 0xaa])
 
+	// =====================================================================
+	// Commands that only exist in firmware V8.1.97 and newer.
+	// Confirmed by disassembly of libvhd_visca.so / vhd_app (V8.1.97 vs V8.1.92).
+	// Only added when the user selected the newer firmware in the module config.
+	// =====================================================================
+	const firmware = instance.config?.firmware || 'v8197'
+	if (firmware === 'v8197') {
+		// ---------- ZOOM: fine (large-scale) speed ----------
+		// 81 01 04 07 02/03 pp FF. pp 1 (slowest) .. 49 (fastest); goes below the
+		// classic variable zoom's slowest step. Per VHD, 01 is the minimum speed.
+		actions.zoom_fine_tele = {
+			name: '[V8.1.97+] Zoom: Tele, fine speed (1=slowest .. 49=fastest)',
+			options: [{ id: 'value', type: 'number', label: 'Fine speed', min: 1, max: 49, default: 1 }],
+			callback: (event) => send([0x01, 0x04, 0x07, 0x02, Number(event.options.value) & 0xff]),
+		}
+		actions.zoom_fine_wide = {
+			name: '[V8.1.97+] Zoom: Wide, fine speed (1=slowest .. 49=fastest)',
+			options: [{ id: 'value', type: 'number', label: 'Fine speed', min: 1, max: 49, default: 1 }],
+			callback: (event) => send([0x01, 0x04, 0x07, 0x03, Number(event.options.value) & 0xff]),
+		}
+
+		// ---------- COLOUR TEMPERATURE in Kelvin ----------
+		// 81 01 04 20 0p 0q 0r 0s FF, where pqrs are the Kelvin value as 4 nibbles
+		// (e.g. 5600 K -> 0x15E0 -> 01 05 0E 00). 2500-8000 K in 100 K steps.
+		actions.colortemp_kelvin = {
+			name: '[V8.1.97+] Colour Temperature: direct Kelvin (2500-8000)',
+			options: [{ id: 'value', type: 'number', label: 'Kelvin', min: 2500, max: 8000, default: 5600, step: 100 }],
+			callback: (event) => {
+				const k = Math.round(Number(event.options.value) / 100) * 100
+				send([0x01, 0x04, 0x20, ...nibbleBytes(k, 4)])
+			},
+		}
+
+		// ---------- FAN control ----------
+		// 81 0A 84 0f pp FF. 0f = fan 1 or 2, pp = 0-100 (% PWM) or 0xFA = auto.
+		actions.fan_speed = {
+			name: '[V8.1.97+] Fan: set speed / auto',
+			options: [
+				{
+					id: 'fan',
+					type: 'dropdown',
+					label: 'Fan',
+					default: '1',
+					choices: [
+						{ id: '1', label: 'Fan 1' },
+						{ id: '2', label: 'Fan 2' },
+					],
+				},
+				{
+					id: 'mode',
+					type: 'dropdown',
+					label: 'Mode',
+					default: 'auto',
+					choices: [
+						{ id: 'auto', label: 'Auto' },
+						{ id: 'manual', label: 'Manual (set % below)' },
+					],
+				},
+				{ id: 'pwm', type: 'number', label: 'Manual speed (% PWM)', min: 0, max: 100, default: 50, isVisible: (o) => o.mode === 'manual' },
+			],
+			callback: (event) => {
+				const fan = parseInt(event.options.fan, 16)
+				const pp = event.options.mode === 'auto' ? 0xfa : Number(event.options.pwm) & 0xff
+				send([0x0a, 0x84, fan, pp])
+			},
+		}
+
+		// ---------- COLOUR MATRIX (6-axis hue) ----------
+		// 81 0A 89 cc hh FF. cc = colour axis, hh = hue 0-64 (default 32).
+		// NOTE: the axis->colour order is the most likely mapping but is not yet
+		// confirmed against VHD's documentation; verify on a real camera.
+		actions.color_matrix_hue = {
+			name: '[V8.1.97+] Colour Matrix: hue per axis (0-64, verify axis order)',
+			options: [
+				{
+					id: 'axis',
+					type: 'dropdown',
+					label: 'Colour axis (order to confirm)',
+					default: '0',
+					choices: [
+						{ id: '0', label: 'Red' },
+						{ id: '1', label: 'Yellow' },
+						{ id: '2', label: 'Green' },
+						{ id: '3', label: 'Cyan' },
+						{ id: '4', label: 'Blue' },
+						{ id: '5', label: 'Magenta' },
+					],
+				},
+				{ id: 'hue', type: 'number', label: 'Hue (0-64, 32=neutral)', min: 0, max: 64, default: 32 },
+			],
+			callback: (event) => send([0x0a, 0x89, parseInt(event.options.axis, 16), Number(event.options.hue) & 0xff]),
+		}
+
+		// ---------- PRESET IMAGE PARAMETERS ----------
+		// 81 0A 11 26 02 pp FF. pp 1 = on, 0 = off. When on, image parameters are
+		// stored/restored together with each preset.
+		actions.preset_image_attr = {
+			name: '[V8.1.97+] Preset: store image parameters with presets',
+			options: [
+				{
+					id: 'value',
+					type: 'dropdown',
+					label: 'State',
+					default: '1',
+					choices: [
+						{ id: '1', label: 'On' },
+						{ id: '0', label: 'Off' },
+					],
+				},
+			],
+			callback: (event) => send([0x0a, 0x11, 0x26, 0x02, parseInt(event.options.value, 16)]),
+		}
+
+		// ---------- PAN/TILT speed step ----------
+		// 81 01 06 45 pp FF. pp 0x08 = standard (24 steps), 0x18 = extended (96 steps).
+		actions.pt_speed_step = choiceAction('[V8.1.97+] Pan/Tilt: Speed Step', [0x01, 0x06, 0x45], [
+			{ id: '8', label: 'Standard (24 steps)' },
+			{ id: '18', label: 'Extended (96 steps)' },
+		], '8')
+
+		// ---------- PAN/TILT ramp curve ----------
+		// 81 01 06 31 pp FF. pp is passed through to the motor layer; exact range
+		// per VHD's documentation. Exposed as a small number; verify on camera.
+		actions.pt_ramp_curve = {
+			name: '[V8.1.97+] Pan/Tilt: Ramp Curve (range per VHD doc, verify)',
+			options: [{ id: 'value', type: 'number', label: 'Curve', min: 0, max: 15, default: 0 }],
+			callback: (event) => send([0x01, 0x06, 0x31, Number(event.options.value) & 0xff]),
+		}
+	}
+
 	return actions
 }
 

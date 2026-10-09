@@ -26,6 +26,10 @@ class VX90Instance extends InstanceBase {
 
 	async configUpdated(config) {
 		this.config = config
+		// Firmware choice decides which actions are offered, so rebuild them here.
+		this.setActionDefinitions(getActionDefinitions(this))
+		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
+		this.setPresetDefinitions(getPresetDefinitions(this))
 		this.destroyConnection()
 		this.initConnection()
 	}
@@ -45,6 +49,32 @@ class VX90Instance extends InstanceBase {
 					'Controls a VHD VX-90 PTZ camera over VISCA-over-IP (TCP). ' +
 					'Default port on the VX-90 is 5678 (see the camera network settings, "PTZ port"). ' +
 					'Default VISCA camera address is 1.',
+			},
+			{
+				type: 'dropdown',
+				id: 'firmware',
+				label: 'Camera firmware',
+				width: 12,
+				default: 'v8197',
+				choices: [
+					{ id: 'legacy', label: 'V8.1.92 and older (up to 2026-06)' },
+					{ id: 'v8197', label: 'V8.1.97 and newer (2026-09-24 and later)' },
+				],
+				tooltip:
+					'Pick the firmware your camera runs. Both options share the full classic command set. ' +
+					'Choosing V8.1.97 additionally exposes the commands that only exist in that firmware ' +
+					'(fine zoom speed, Kelvin colour temperature, fan control, colour matrix, preset image ' +
+					'parameters, pan/tilt speed step). You can check the version in the camera web UI or OSD.',
+			},
+			{
+				type: 'static-text',
+				id: 'fw_info',
+				width: 12,
+				label: '',
+				value:
+					'Actions marked [V8.1.97+] appear only when that firmware is selected. ' +
+					'Switching firmware here re-builds the action list; buttons bound to a command ' +
+					'that the other firmware does not have will show as unknown until you switch back.',
 			},
 			{
 				type: 'textinput',
