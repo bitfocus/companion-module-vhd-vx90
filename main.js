@@ -4,6 +4,7 @@ const { UpgradeScripts } = require('./upgrades')
 const { getActionDefinitions } = require('./actions')
 const { getFeedbackDefinitions } = require('./feedbacks')
 const { getPresetDefinitions } = require('./presets')
+const { COLOR_MATRIX_AXES, COLOR_MATRIX_NEUTRAL } = require('./visca')
 
 class VX90Instance extends InstanceBase {
 	constructor(internal) {
@@ -12,6 +13,31 @@ class VX90Instance extends InstanceBase {
 		this.reconnectTimer = null
 		this.connected = false
 		this.badConfig = false
+		// The colour matrix has no native up/down command, so the module tracks
+		// the last value it set per axis (seeded to neutral) to support stepping.
+		this.colorMatrixHue = {}
+		for (const a of COLOR_MATRIX_AXES) this.colorMatrixHue[a.id] = COLOR_MATRIX_NEUTRAL
+	}
+
+	isV8197() {
+		return (this.config?.firmware || 'v8197') === 'v8197'
+	}
+
+	buildVariableDefinitions() {
+		const defs = [{ variableId: 'connection_status', name: 'Connection status' }]
+		if (this.isV8197()) {
+			for (const a of COLOR_MATRIX_AXES) {
+				defs.push({ variableId: a.varId, name: `Colour matrix hue: ${a.label} (last set)` })
+			}
+		}
+		return defs
+	}
+
+	publishColorMatrixVars() {
+		if (!this.isV8197()) return
+		const vals = {}
+		for (const a of COLOR_MATRIX_AXES) vals[a.varId] = this.colorMatrixHue[a.id]
+		this.setVariableValues(vals)
 	}
 
 	async init(config) {
@@ -20,13 +46,20 @@ class VX90Instance extends InstanceBase {
 		this.setActionDefinitions(getActionDefinitions(this))
 		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 		this.setPresetDefinitions(getPresetDefinitions(this))
-		this.setVariableDefinitions([{ variableId: 'connection_status', name: 'Connection status' }])
+		this.setVariableDefinitions(this.buildVariableDefinitions())
 		this.setVariableValues({ connection_status: 'Connecting' })
+		this.publishColorMatrixVars()
 		this.initConnection()
 	}
 
 	async configUpdated(config) {
 		this.config = config
+		// Firmware choice decides which actions and variables are offered.
+		this.setActionDefinitions(getActionDefinitions(this))
+		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
+		this.setPresetDefinitions(getPresetDefinitions(this))
+		this.setVariableDefinitions(this.buildVariableDefinitions())
+		this.publishColorMatrixVars()
 		this.destroyConnection()
 		this.initConnection()
 	}
@@ -46,6 +79,32 @@ class VX90Instance extends InstanceBase {
 					'Controls a VHD VX-90 PTZ camera over VISCA-over-IP (TCP). ' +
 					'Default port on the VX-90 is 5678 (see the camera network settings, "PTZ port"). ' +
 					'Default VISCA camera address is 1.',
+			},
+			{
+				type: 'dropdown',
+				id: 'firmware',
+				label: 'Camera firmware',
+				width: 12,
+				default: 'v8197',
+				choices: [
+					{ id: 'legacy', label: 'V8.1.92 and older (up to 2026-06)' },
+					{ id: 'v8197', label: 'V8.1.97 and newer (2026-09-24 and later)' },
+				],
+				tooltip:
+					'Pick the firmware your camera runs. Both options share the full classic command set. ' +
+					'Choosing V8.1.97 additionally exposes the commands that only exist in that firmware ' +
+					'(fine zoom speed, Kelvin colour temperature, fan control, colour matrix, preset image ' +
+					'parameters, pan/tilt speed step). You can check the version in the camera web UI or OSD.',
+			},
+			{
+				type: 'static-text',
+				id: 'fw_info',
+				width: 12,
+				label: '',
+				value:
+					'Actions marked [V8.1.97+] appear only when that firmware is selected. ' +
+					'Switching firmware here re-builds the action list; buttons bound to a command ' +
+					'that the other firmware does not have will show as unknown until you switch back.',
 			},
 			{
 				type: 'textinput',
