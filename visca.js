@@ -42,9 +42,27 @@ function buildCommand(address, bytes) {
 	return Buffer.from([header, ...flat, 0xff])
 }
 
+// Colour-matrix (6-axis hue) axes, shared by main.js (state + variables) and
+// actions.js. cc byte = id; hue range 0-64 with 32 neutral.
+const COLOR_MATRIX_AXES = [
+	{ id: '0', label: 'Red', varId: 'cmatrix_red' },
+	{ id: '1', label: 'Yellow', varId: 'cmatrix_yellow' },
+	{ id: '2', label: 'Green', varId: 'cmatrix_green' },
+	{ id: '3', label: 'Cyan', varId: 'cmatrix_cyan' },
+	{ id: '4', label: 'Blue', varId: 'cmatrix_blue' },
+	{ id: '5', label: 'Magenta', varId: 'cmatrix_magenta' },
+]
+const COLOR_MATRIX_MIN = 0
+const COLOR_MATRIX_MAX = 64
+const COLOR_MATRIX_NEUTRAL = 32
+
 module.exports = {
 	nibbleBytes,
 	signedNibbleBytes16,
 	clamp,
 	buildCommand,
+	COLOR_MATRIX_AXES,
+	COLOR_MATRIX_MIN,
+	COLOR_MATRIX_MAX,
+	COLOR_MATRIX_NEUTRAL,
 }
