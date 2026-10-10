@@ -1,4 +1,13 @@
-const { nibbleBytes, signedNibbleBytes16, buildCommand } = require('./visca')
+const {
+	nibbleBytes,
+	signedNibbleBytes16,
+	buildCommand,
+	clamp,
+	COLOR_MATRIX_AXES,
+	COLOR_MATRIX_MIN,
+	COLOR_MATRIX_MAX,
+	COLOR_MATRIX_NEUTRAL,
+} = require('./visca')
 
 /**
  * Full action set for the VHD VX-90, built from VHD's official
@@ -582,28 +591,73 @@ function getActionDefinitions(instance) {
 
 		// ---------- COLOUR MATRIX (6-axis hue) ----------
 		// 81 0A 89 cc hh FF. cc = colour axis, hh = hue 0-64 (default 32).
+		// The camera has no native up/down for this, so the module remembers the
+		// last value it set per axis (instance.colorMatrixHue, seeded to 32) and
+		// always sends an absolute value. Each set also updates a Companion
+		// variable (e.g. $(vhd-vx90:cmatrix_red)).
 		// NOTE: the axis->colour order is the most likely mapping but is not yet
 		// confirmed against VHD's documentation; verify on a real camera.
+		const axisChoices = COLOR_MATRIX_AXES.map((a) => ({ id: a.id, label: a.label }))
+		const axisVarId = Object.fromEntries(COLOR_MATRIX_AXES.map((a) => [a.id, a.varId]))
+		const setColorMatrix = (axisId, value) => {
+			const v = clamp(value, COLOR_MATRIX_MIN, COLOR_MATRIX_MAX)
+			instance.colorMatrixHue[axisId] = v
+			send([0x0a, 0x89, parseInt(axisId, 16), v & 0xff])
+			if (axisVarId[axisId]) instance.setVariableValues({ [axisVarId[axisId]]: v })
+			return v
+		}
+
 		actions.color_matrix_hue = {
-			name: '[V8.1.97+] Colour Matrix: hue per axis (0-64, verify axis order)',
+			name: '[V8.1.97+] Colour Matrix: set hue (absolute 0-64, verify axis order)',
+			options: [
+				{ id: 'axis', type: 'dropdown', label: 'Colour axis (order to confirm)', default: '0', choices: axisChoices },
+				{ id: 'hue', type: 'number', label: 'Hue (0-64, 32=neutral)', min: COLOR_MATRIX_MIN, max: COLOR_MATRIX_MAX, default: COLOR_MATRIX_NEUTRAL },
+			],
+			callback: (event) => setColorMatrix(event.options.axis, Number(event.options.hue)),
+		}
+
+		actions.color_matrix_adjust = {
+			name: '[V8.1.97+] Colour Matrix: step hue up/down',
+			options: [
+				{ id: 'axis', type: 'dropdown', label: 'Colour axis', default: '0', choices: axisChoices },
+				{
+					id: 'direction',
+					type: 'dropdown',
+					label: 'Direction',
+					default: 'up',
+					choices: [
+						{ id: 'up', label: 'Up (+)' },
+						{ id: 'down', label: 'Down (-)' },
+					],
+				},
+				{ id: 'step', type: 'number', label: 'Step size', min: 1, max: 64, default: 1 },
+			],
+			callback: (event) => {
+				const axisId = event.options.axis
+				const step = Number(event.options.step) * (event.options.direction === 'down' ? -1 : 1)
+				const current = instance.colorMatrixHue[axisId] ?? COLOR_MATRIX_NEUTRAL
+				setColorMatrix(axisId, current + step)
+			},
+		}
+
+		actions.color_matrix_neutral = {
+			name: '[V8.1.97+] Colour Matrix: reset to neutral (32)',
 			options: [
 				{
 					id: 'axis',
 					type: 'dropdown',
-					label: 'Colour axis (order to confirm)',
-					default: '0',
-					choices: [
-						{ id: '0', label: 'Red' },
-						{ id: '1', label: 'Yellow' },
-						{ id: '2', label: 'Green' },
-						{ id: '3', label: 'Cyan' },
-						{ id: '4', label: 'Blue' },
-						{ id: '5', label: 'Magenta' },
-					],
+					label: 'Colour axis',
+					default: 'all',
+					choices: [{ id: 'all', label: 'All axes' }, ...axisChoices],
 				},
-				{ id: 'hue', type: 'number', label: 'Hue (0-64, 32=neutral)', min: 0, max: 64, default: 32 },
 			],
-			callback: (event) => send([0x0a, 0x89, parseInt(event.options.axis, 16), Number(event.options.hue) & 0xff]),
+			callback: (event) => {
+				if (event.options.axis === 'all') {
+					for (const a of COLOR_MATRIX_AXES) setColorMatrix(a.id, COLOR_MATRIX_NEUTRAL)
+				} else {
+					setColorMatrix(event.options.axis, COLOR_MATRIX_NEUTRAL)
+				}
+			},
 		}
 
 		// ---------- PRESET IMAGE PARAMETERS ----------

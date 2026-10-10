@@ -4,6 +4,7 @@ const { UpgradeScripts } = require('./upgrades')
 const { getActionDefinitions } = require('./actions')
 const { getFeedbackDefinitions } = require('./feedbacks')
 const { getPresetDefinitions } = require('./presets')
+const { COLOR_MATRIX_AXES, COLOR_MATRIX_NEUTRAL } = require('./visca')
 
 class VX90Instance extends InstanceBase {
 	constructor(internal) {
@@ -11,6 +12,31 @@ class VX90Instance extends InstanceBase {
 		this.socket = null
 		this.reconnectTimer = null
 		this.connected = false
+		// The colour matrix has no native up/down command, so the module tracks
+		// the last value it set per axis (seeded to neutral) to support stepping.
+		this.colorMatrixHue = {}
+		for (const a of COLOR_MATRIX_AXES) this.colorMatrixHue[a.id] = COLOR_MATRIX_NEUTRAL
+	}
+
+	isV8197() {
+		return (this.config?.firmware || 'v8197') === 'v8197'
+	}
+
+	buildVariableDefinitions() {
+		const defs = [{ variableId: 'connection_status', name: 'Connection status' }]
+		if (this.isV8197()) {
+			for (const a of COLOR_MATRIX_AXES) {
+				defs.push({ variableId: a.varId, name: `Colour matrix hue: ${a.label} (last set)` })
+			}
+		}
+		return defs
+	}
+
+	publishColorMatrixVars() {
+		if (!this.isV8197()) return
+		const vals = {}
+		for (const a of COLOR_MATRIX_AXES) vals[a.varId] = this.colorMatrixHue[a.id]
+		this.setVariableValues(vals)
 	}
 
 	async init(config) {
@@ -19,17 +45,20 @@ class VX90Instance extends InstanceBase {
 		this.setActionDefinitions(getActionDefinitions(this))
 		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 		this.setPresetDefinitions(getPresetDefinitions(this))
-		this.setVariableDefinitions([{ variableId: 'connection_status', name: 'Connection status' }])
+		this.setVariableDefinitions(this.buildVariableDefinitions())
 		this.setVariableValues({ connection_status: 'Connecting' })
+		this.publishColorMatrixVars()
 		this.initConnection()
 	}
 
 	async configUpdated(config) {
 		this.config = config
-		// Firmware choice decides which actions are offered, so rebuild them here.
+		// Firmware choice decides which actions and variables are offered.
 		this.setActionDefinitions(getActionDefinitions(this))
 		this.setFeedbackDefinitions(getFeedbackDefinitions(this))
 		this.setPresetDefinitions(getPresetDefinitions(this))
+		this.setVariableDefinitions(this.buildVariableDefinitions())
+		this.publishColorMatrixVars()
 		this.destroyConnection()
 		this.initConnection()
 	}
