@@ -34,14 +34,37 @@ VISCA module; this module implements them directly.
   actions (ND filter, tally, tracking, motion sync, EIS, image style,
   audio input, IR address, restart, factory reset) should be spot-checked
   the first time you use them.
-- Inquiry/query commands (reading back the camera's current state) are
-  **not implemented yet** — VHD's own documentation only lists a partial
-  set of query commands, and this first version focuses on control
-  actions. A `connected` feedback (green when the TCP connection is up)
-  is included, but there's no per-parameter feedback yet.
+- Camera state is read back with standard VISCA inquiries (see below).
+  VHD-specific state (tally, tracking, ND filter, colour matrix) cannot
+  be read back yet; the colour matrix variables show the last value set
+  by this module.
 - The `Restart Camera` and `Factory Reset IP + Password` actions do
   exactly what they say — use with care, ideally behind a confirmation
   step in your button setup.
+
+## Reading camera state (v1.3.0+)
+
+With **Read camera state** enabled in the connection settings, the module
+polls the camera and publishes what it reports:
+
+- **Positions** (every *Position polling interval*, default 500 ms):
+  `pan_pos`, `tilt_pos`, `zoom_pos`, `zoom_pct`, `focus_pos`, and
+  `ptz_moving` (true while pan/tilt/zoom is changing).
+- **Settings** (every 5 s, and right after any command): power, focus
+  mode, exposure mode, iris, shutter, gain, bright, exposure
+  compensation, backlight, white balance mode, R/B gain, colour
+  temperature, saturation, flips.
+- `last_error`: the last error the camera returned for a command.
+
+Feedbacks: *Pan/tilt/zoom is moving*, *Power state*, *Focus mode*,
+*Exposure mode*, *White balance mode*, *Backlight*, *Exposure
+compensation*, *Zoom position within range*, *Pan/tilt near a position*.
+Ready-made buttons are under **Presets → Status**.
+
+If the camera does not answer an inquiry (three times in a row), the
+module stops asking for it until the next reconnect and lists it in the
+`unsupported_inquiries` variable, so one unsupported query never slows
+the others.
 
 ## Support
 

@@ -5,6 +5,7 @@ const { getActionDefinitions } = require('./actions')
 const { getFeedbackDefinitions } = require('./feedbacks')
 const { getPresetDefinitions } = require('./presets')
 const { COLOR_MATRIX_AXES, COLOR_MATRIX_NEUTRAL } = require('./visca')
+const { InquiryEngine, STATE_VARIABLES } = require('./inquiry')
 
 class VX90Instance extends InstanceBase {
 	constructor(internal) {
@@ -17,6 +18,49 @@ class VX90Instance extends InstanceBase {
 		// the last value it set per axis (seeded to neutral) to support stepping.
 		this.colorMatrixHue = {}
 		for (const a of COLOR_MATRIX_AXES) this.colorMatrixHue[a.id] = COLOR_MATRIX_NEUTRAL
+
+		// Reads camera state back (positions, exposure, colour, ...) by polling
+		// VISCA inquiry commands; see inquiry.js.
+		const self = this
+		this.inquiry = new InquiryEngine({
+			get address() {
+				return self.viscaAddress
+			},
+			write: (buf) => {
+				if (!self.socket || !self.connected) return false
+				self.socket.write(buf)
+				return true
+			},
+			log: (level, msg) => self.log(level, msg),
+			onState: (keys) => self.publishState(keys),
+			onError: (text) => {
+				self.log('warn', 'Camera reported: ' + text)
+				self.setVariableValues({ last_error: `${new Date().toLocaleTimeString()} ${text}` })
+			},
+		})
+	}
+
+	get state() {
+		return this.inquiry.state
+	}
+
+	get pollIntervalMs() {
+		const v = Number(this.config?.poll ?? 500)
+		return Number.isFinite(v) ? v : 500
+	}
+
+	get pollingEnabled() {
+		return this.config?.status_polling !== false
+	}
+
+	publishState(keys) {
+		const vals = {}
+		for (const k of keys) {
+			const v = this.inquiry.state[k]
+			vals[k] = typeof v === 'boolean' ? String(v) : v
+		}
+		this.setVariableValues(vals)
+		this.checkFeedbacks()
 	}
 
 	isV8197() {
@@ -24,7 +68,7 @@ class VX90Instance extends InstanceBase {
 	}
 
 	buildVariableDefinitions() {
-		const defs = [{ variableId: 'connection_status', name: 'Connection status' }]
+		const defs = [{ variableId: 'connection_status', name: 'Connection status' }, ...STATE_VARIABLES]
 		if (this.isV8197()) {
 			for (const a of COLOR_MATRIX_AXES) {
 				defs.push({ variableId: a.varId, name: `Colour matrix hue: ${a.label} (last set)` })
@@ -107,6 +151,28 @@ class VX90Instance extends InstanceBase {
 					'that the other firmware does not have will show as unknown until you switch back.',
 			},
 			{
+				type: 'checkbox',
+				id: 'status_polling',
+				label: 'Read camera state (variables + feedbacks)',
+				width: 6,
+				default: true,
+			},
+			{
+				type: 'dropdown',
+				id: 'poll',
+				label: 'Position polling interval',
+				width: 6,
+				default: 500,
+				choices: [
+					{ id: 0, label: 'Off (settings only, every 5 s)' },
+					{ id: 250, label: '250 ms (smooth)' },
+					{ id: 500, label: '500 ms (default)' },
+					{ id: 1000, label: '1 s' },
+					{ id: 2000, label: '2 s' },
+				],
+				isVisible: (options) => options.status_polling !== false,
+			},
+			{
 				type: 'textinput',
 				id: 'host',
 				label: 'Camera IP address',
@@ -148,6 +214,7 @@ class VX90Instance extends InstanceBase {
 			this.connected = true
 			this.updateStatus(InstanceStatus.Ok)
 			this.setVariableValues({ connection_status: 'Connected' })
+			if (this.pollingEnabled) this.inquiry.start(this.pollIntervalMs)
 		})
 
 		this.socket.on('error', (err) => {
@@ -159,6 +226,7 @@ class VX90Instance extends InstanceBase {
 
 		this.socket.on('close', () => {
 			this.connected = false
+			this.inquiry.stop()
 			if (!this.badConfig) {
 				this.updateStatus(InstanceStatus.Disconnected)
 				this.setVariableValues({ connection_status: 'Disconnected' })
@@ -167,8 +235,7 @@ class VX90Instance extends InstanceBase {
 		})
 
 		this.socket.on('data', (data) => {
-			// VISCA ACK/completion/error packets could be parsed here if needed later.
-			this.log('debug', 'RX: ' + data.toString('hex'))
+			this.inquiry.handleData(data)
 		})
 
 		this.socket.connect(this.config.port || 5678, this.config.host)
@@ -183,6 +250,7 @@ class VX90Instance extends InstanceBase {
 	}
 
 	destroyConnection() {
+		this.inquiry.stop()
 		if (this.reconnectTimer) {
 			clearTimeout(this.reconnectTimer)
 			this.reconnectTimer = null
@@ -206,6 +274,8 @@ class VX90Instance extends InstanceBase {
 		}
 		this.log('debug', 'TX: ' + buf.toString('hex'))
 		this.socket.write(buf)
+		// A command may have changed a setting: read state back shortly after.
+		if (this.pollingEnabled) this.inquiry.refreshSoon()
 	}
 
 	get viscaAddress() {

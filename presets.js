@@ -8,6 +8,17 @@ function getPresetDefinitions(instance) {
 		bgcolor: combineRgb(0, 0, 0),
 	}
 
+	// Variable references need the connection's label, which the user may rename.
+	const label = instance.label
+	const statusButton = (name, text, feedbacks = []) => ({
+		type: 'button',
+		category: 'Status',
+		name,
+		style: { ...basicStyle, size: '14', text: text.replaceAll('LABEL', label) },
+		steps: [{ down: [], up: [] }],
+		feedbacks,
+	})
+
 	const dirButton = (label, actionId, options = {}) => ({
 		type: 'button',
 		category: 'Pan / Tilt',
@@ -55,14 +66,18 @@ function getPresetDefinitions(instance) {
 			],
 			feedbacks: [],
 		},
-		connection_status: {
-			type: 'button',
-			category: 'Status',
-			name: 'Connection status',
-			style: { ...basicStyle, text: 'VX90\\n$(vhd-vx90:connection_status)' },
-			steps: [{ down: [], up: [] }],
-			feedbacks: [{ feedbackId: 'connected', options: {} }],
-		},
+		connection_status: statusButton('Connection status', 'VX90\\n$(LABEL:connection_status)', [
+			{ feedbackId: 'connected', options: {} },
+		]),
+		status_zoom: statusButton('Zoom position', 'ZOOM\\n$(LABEL:zoom_pct)%', [
+			{ feedbackId: 'ptz_moving', options: {} },
+		]),
+		status_focus: statusButton('Focus mode', 'FOCUS\\n$(LABEL:focus_mode)', [
+			{ feedbackId: 'focus_mode', options: { value: 'Auto' }, style: { bgcolor: combineRgb(0, 120, 0) } },
+		]),
+		status_exposure: statusButton('Exposure', '$(LABEL:ae_mode)\\n$(LABEL:iris)\\nG $(LABEL:gain)'),
+		status_wb: statusButton('White balance', 'WB\\n$(LABEL:wb_mode)\\n$(LABEL:colortemp)K'),
+		status_moving: statusButton('PTZ moving', 'PTZ\\nMOVING', [{ feedbackId: 'ptz_moving', options: {} }]),
 	}
 }
 
