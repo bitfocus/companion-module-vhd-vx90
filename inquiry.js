@@ -114,14 +114,66 @@ const INQUIRIES = [
 		apply: (p, s) => { s.r_gain = lastNibbles(2)(p) } },
 	{ id: 'b_gain', label: 'B gain', bytes: [0x09, 0x04, 0x44], tier: 'slow',
 		apply: (p, s) => { s.b_gain = lastNibbles(2)(p) } },
-	{ id: 'colortemp', label: 'Colour temperature', bytes: [0x09, 0x04, 0x20], tier: 'slow',
+	{ id: 'colortemp', label: 'Colour temperature', bytes: [0x09, 0x04, 0x20], tier: 'slow', fw: 'legacy',
 		apply: (p, s) => { s.colortemp = 2500 + lastNibbles(2)(p) * 100 } },
+	// V8.1.97+: answers directly in Kelvin, 90 50 0p 0q 0r 0s FF.
+	{ id: 'colortemp_k', label: 'Colour temperature (Kelvin)', bytes: [0x09, 0x04, 0x20, 0x01], tier: 'slow', fw: 'v8197',
+		apply: (p, s) => { s.colortemp = nibblesToInt(p) } },
 	{ id: 'saturation', label: 'Saturation', bytes: [0x09, 0x04, 0x49], tier: 'slow',
 		apply: (p, s) => { s.saturation = lastNibbles(1)(p) } },
 	{ id: 'flip_h', label: 'Horizontal flip', bytes: [0x09, 0x04, 0x61], tier: 'slow',
 		apply: (p, s) => { s.flip_h = onOffReply(p) } },
 	{ id: 'flip_v', label: 'Vertical flip', bytes: [0x09, 0x04, 0x66], tier: 'slow',
 		apply: (p, s) => { s.flip_v = onOffReply(p) } },
+
+	// ---- More picture settings (reply formats from VHD's VISCA list) ----
+	{ id: 'gain_limit', label: 'Gain limit', bytes: [0x09, 0x04, 0x2c], tier: 'slow',
+		apply: (p, s) => { s.gain_limit = lastNibbles(1)(p) } },
+	{ id: 'metering', label: 'Metering mode', bytes: [0x09, 0x04, 0x3a], tier: 'slow',
+		apply: (p, s) => { s.metering = mapReply({ 0: 'Average', 1: 'Center', 2: 'Smart', 3: 'Top' })(p) } },
+	{ id: 'drc', label: 'DRC', bytes: [0x09, 0x04, 0xa7], tier: 'slow',
+		apply: (p, s) => { s.drc = lastNibbles(1)(p) } },
+	{ id: 'anti_flicker', label: 'Anti-flicker', bytes: [0x09, 0x04, 0x55], tier: 'slow',
+		apply: (p, s) => { s.anti_flicker = mapReply({ 0: 'Off', 1: '50Hz', 2: '60Hz' })(p) } },
+	{ id: 'rg_tuning', label: 'RG tuning', bytes: [0x09, 0x04, 0x12], tier: 'slow',
+		apply: (p, s) => { s.rg_tuning = lastNibbles(2)(p) - 10 } },
+	{ id: 'bg_tuning', label: 'BG tuning', bytes: [0x09, 0x04, 0x13], tier: 'slow',
+		apply: (p, s) => { s.bg_tuning = lastNibbles(2)(p) - 10 } },
+	{ id: 'hue', label: 'Hue', bytes: [0x09, 0x04, 0x4f], tier: 'slow',
+		apply: (p, s) => { s.hue = lastNibbles(1)(p) } },
+	{ id: 'luminance', label: 'Luminance', bytes: [0x09, 0x04, 0xa1], tier: 'slow',
+		apply: (p, s) => { s.luminance = lastNibbles(1)(p) } },
+	{ id: 'contrast', label: 'Contrast', bytes: [0x09, 0x04, 0xa2], tier: 'slow',
+		apply: (p, s) => { s.contrast = lastNibbles(1)(p) } },
+	{ id: 'sharpness', label: 'Sharpness', bytes: [0x09, 0x04, 0x42], tier: 'slow',
+		apply: (p, s) => { s.sharpness = lastNibbles(1)(p) } },
+	{ id: 'nr3d', label: '3D noise reduction', bytes: [0x09, 0x04, 0x54], tier: 'slow',
+		apply: (p, s) => { s.nr3d = p[p.length - 1] === 0 ? 'Off' : p[p.length - 1] } },
+	{ id: 'gamma', label: 'Gamma', bytes: [0x09, 0x04, 0x5b], tier: 'slow',
+		apply: (p, s) => { s.gamma = mapReply({ 0: 'Default', 1: '0.45', 2: '0.5', 3: '0.56', 4: 'EXT', 5: 'PC' })(p) } },
+	{ id: 'bw_mode', label: 'Black & white', bytes: [0x09, 0x04, 0x63], tier: 'slow',
+		apply: (p, s) => { s.bw_mode = mapReply({ 2: 'Off', 4: 'On' })(p) } },
+	{ id: 'af_sensitivity', label: 'AF sensitivity', bytes: [0x09, 0x04, 0x58], tier: 'slow',
+		apply: (p, s) => { s.af_sensitivity = mapReply({ 1: 'High', 2: 'Normal', 3: 'Low' })(p) } },
+	{ id: 'af_zone', label: 'AF zone', bytes: [0x09, 0x04, 0xaa], tier: 'slow',
+		apply: (p, s) => { s.af_zone = mapReply({ 0: 'Top', 1: 'Center', 2: 'Bottom', 3: 'Front' })(p) } },
+	{ id: 'osd_menu', label: 'OSD menu', bytes: [0x09, 0x06, 0x06], tier: 'slow',
+		apply: (p, s) => { s.osd_menu = onOffReply(p) } },
+
+	// ---- VHD-specific ----
+	{ id: 'tally_mode', label: 'Tally mode enabled', bytes: [0x09, 0x11, 0x47], tier: 'slow',
+		apply: (p, s) => { s.tally_mode = onOffReply(p) } },
+	{ id: 'tally', label: 'Tally light', bytes: [0x09, 0x06, 0x6a], tier: 'slow',
+		apply: (p, s) => {
+			const mode = { 1: 'Blink', 2: 'On', 3: 'Off' }[p[0]] ?? `0x${p[0].toString(16)}`
+			const colour = { 0: 'Green', 1: 'Red' }[p[1]] ?? ''
+			s.tally_led = mode
+			s.tally_colour = mode === 'Off' ? '' : colour
+			s.tally = mode === 'Off' ? 'Off' : `${colour} ${mode === 'On' ? 'steady' : 'blink'}`.trim()
+		} },
+	// Reply format not documented by VHD; the matching set command uses 02=On/03=Off.
+	{ id: 'tracking', label: 'Tracking status', bytes: [0x09, 0x7e, 0x11, 0x54], tier: 'slow',
+		apply: (p, s) => { s.tracking = onOffReply(p) } },
 ]
 
 /** Companion variable definitions for everything the inquiries can fill. */
@@ -150,6 +202,27 @@ const STATE_VARIABLES = [
 	{ variableId: 'saturation', name: 'Saturation' },
 	{ variableId: 'flip_h', name: 'Horizontal flip' },
 	{ variableId: 'flip_v', name: 'Vertical flip' },
+	{ variableId: 'gain_limit', name: 'Gain limit' },
+	{ variableId: 'metering', name: 'Metering mode' },
+	{ variableId: 'drc', name: 'DRC' },
+	{ variableId: 'anti_flicker', name: 'Anti-flicker' },
+	{ variableId: 'rg_tuning', name: 'RG tuning (-10..10)' },
+	{ variableId: 'bg_tuning', name: 'BG tuning (-10..10)' },
+	{ variableId: 'hue', name: 'Hue' },
+	{ variableId: 'luminance', name: 'Luminance' },
+	{ variableId: 'contrast', name: 'Contrast' },
+	{ variableId: 'sharpness', name: 'Sharpness' },
+	{ variableId: 'nr3d', name: '3D noise reduction' },
+	{ variableId: 'gamma', name: 'Gamma' },
+	{ variableId: 'bw_mode', name: 'Black & white mode' },
+	{ variableId: 'af_sensitivity', name: 'AF sensitivity' },
+	{ variableId: 'af_zone', name: 'AF zone' },
+	{ variableId: 'osd_menu', name: 'OSD menu open (On/Off)' },
+	{ variableId: 'tally_mode', name: 'Tally mode enabled (On/Off)' },
+	{ variableId: 'tally', name: 'Tally light (e.g. "Red steady", "Off")' },
+	{ variableId: 'tally_led', name: 'Tally LED mode (On/Blink/Off)' },
+	{ variableId: 'tally_colour', name: 'Tally colour (Red/Green)' },
+	{ variableId: 'tracking', name: 'Auto tracking (On/Off)' },
 	{ variableId: 'last_error', name: 'Last camera error' },
 	{ variableId: 'unsupported_inquiries', name: 'Inquiries the camera did not answer' },
 ]
@@ -157,6 +230,7 @@ const STATE_VARIABLES = [
 const INQUIRY_TIMEOUT_MS = 500
 const MAX_FAILURES = 3
 const SLOW_INTERVAL_MS = 5000
+const SLOW_PER_ROUND = 3
 
 class InquiryEngine {
 	/**
@@ -174,6 +248,7 @@ class InquiryEngine {
 		this.fastTimer = null
 		this.slowTimer = null
 		this.lastMotion = null
+		this.slowSinceFast = SLOW_PER_ROUND
 	}
 
 	// ---------- receive side ----------
@@ -271,10 +346,24 @@ class InquiryEngine {
 	// ---------- send side ----------
 
 	enqueue(tier) {
+		const fw = typeof this.host.firmware === 'string' ? this.host.firmware : 'v8197'
+		const batch = []
 		for (const inq of INQUIRIES) {
 			if (inq.tier !== tier || this.unsupported.has(inq.id)) continue
+			if (inq.fw && inq.fw !== fw) continue
 			if (this.queue.includes(inq) || this.pending?.inq === inq) continue
-			this.queue.push(inq)
+			batch.push(inq)
+		}
+		if (tier === 'fast') {
+			// Positions jump ahead of a long settings sweep, but only after at least
+			// SLOW_PER_ROUND settings have been asked since the previous position
+			// round, so fast polling can never starve the settings.
+			const slowWaiting = this.queue.filter((q) => q.tier === 'slow').length
+			const pos = Math.min(Math.max(0, SLOW_PER_ROUND - this.slowSinceFast), slowWaiting)
+			this.queue.splice(pos, 0, ...batch)
+			this.slowSinceFast = 0
+		} else {
+			this.queue.push(...batch)
 		}
 		if (!this.pending) this.next()
 	}
@@ -283,6 +372,7 @@ class InquiryEngine {
 		if (this.pending) return
 		const inq = this.queue.shift()
 		if (!inq) return
+		if (inq.tier === 'slow') this.slowSinceFast++
 		const header = 0x80 | (this.host.address & 0x07)
 		const buf = Buffer.from([header, ...inq.bytes, 0xff])
 		const pending = { inq, timer: null }

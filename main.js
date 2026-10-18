@@ -26,6 +26,9 @@ class VX90Instance extends InstanceBase {
 			get address() {
 				return self.viscaAddress
 			},
+			get firmware() {
+				return self.isV8197() ? 'v8197' : 'legacy'
+			},
 			write: (buf) => {
 				if (!self.socket || !self.connected) return false
 				self.socket.write(buf)

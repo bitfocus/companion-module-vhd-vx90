@@ -34,10 +34,11 @@ VISCA module; this module implements them directly.
   actions (ND filter, tally, tracking, motion sync, EIS, image style,
   audio input, IR address, restart, factory reset) should be spot-checked
   the first time you use them.
-- Camera state is read back with standard VISCA inquiries (see below).
-  VHD-specific state (tally, tracking, ND filter, colour matrix) cannot
-  be read back yet; the colour matrix variables show the last value set
-  by this module.
+- Camera state is read back with VISCA inquiries (see below). ND filter
+  and colour matrix have no inquiry command in the firmware; the colour
+  matrix variables show the last value set by this module.
+- The tracking status reply is not documented by VHD; it is decoded as
+  On/Off like the matching set command. Check it the first time.
 - The `Restart Camera` and `Factory Reset IP + Password` actions do
   exactly what they say — use with care, ideally behind a confirmation
   step in your button setup.
@@ -47,16 +48,21 @@ VISCA module; this module implements them directly.
 With **Read camera state** enabled in the connection settings, the module
 polls the camera and publishes what it reports:
 
-- **Positions** (every *Position polling interval*, default 500 ms):
+- **Positions** (every *Position polling interval*, default 500 ms;
+  they get priority, while settings still advance between position rounds):
   `pan_pos`, `tilt_pos`, `zoom_pos`, `zoom_pct`, `focus_pos`, and
   `ptz_moving` (true while pan/tilt/zoom is changing).
 - **Settings** (every 5 s, and right after any command): power, focus
   mode, exposure mode, iris, shutter, gain, bright, exposure
   compensation, backlight, white balance mode, R/B gain, colour
-  temperature, saturation, flips.
+  temperature (in Kelvin directly on V8.1.97+), saturation, hue, RG/BG
+  tuning, luminance, contrast, sharpness, gain limit, metering, DRC,
+  anti-flicker, 3D noise reduction, gamma, black & white, AF sensitivity
+  and zone, flips, OSD menu, **tally light** (`tally`, e.g. "Red steady"),
+  tally mode, and **auto tracking** (`tracking`).
 - `last_error`: the last error the camera returned for a command.
 
-Feedbacks: *Pan/tilt/zoom is moving*, *Power state*, *Focus mode*,
+Feedbacks: *Tally light*, *Auto tracking*, *OSD menu open*, *Pan/tilt/zoom is moving*, *Power state*, *Focus mode*,
 *Exposure mode*, *White balance mode*, *Backlight*, *Exposure
 compensation*, *Zoom position within range*, *Pan/tilt near a position*.
 Ready-made buttons are under **Presets → Status**.

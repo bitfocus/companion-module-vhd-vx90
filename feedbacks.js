@@ -52,6 +52,17 @@ function getFeedbackDefinitions(instance) {
 		wb_mode: equals('White balance mode', 'wb_mode', choicesFrom(WB_MODES), 'Auto'),
 		backlight: equals('Backlight compensation', 'backlight', onOff, 'On', AMBER),
 		expcomp_mode: equals('Exposure compensation on/off', 'expcomp_mode', onOff, 'On', AMBER),
+		tally: equals('Tally light', 'tally', [
+			{ id: 'Red steady', label: 'Red steady' },
+			{ id: 'Red blink', label: 'Red blink' },
+			{ id: 'Green steady', label: 'Green steady' },
+			{ id: 'Green blink', label: 'Green blink' },
+			{ id: 'Off', label: 'Off' },
+		], 'Red steady', RED),
+		tally_mode: equals('Tally mode enabled', 'tally_mode', onOff, 'On'),
+		tracking: equals('Auto tracking', 'tracking', onOff, 'On'),
+		osd_menu: equals('OSD menu open', 'osd_menu', onOff, 'On', AMBER),
+		bw_mode: equals('Black & white mode', 'bw_mode', onOff, 'On', AMBER),
 		zoom_range: {
 			type: 'boolean',
 			name: 'Zoom position within range (%)',

@@ -77,6 +77,13 @@ function getPresetDefinitions(instance) {
 		]),
 		status_exposure: statusButton('Exposure', '$(LABEL:ae_mode)\\n$(LABEL:iris)\\nG $(LABEL:gain)'),
 		status_wb: statusButton('White balance', 'WB\\n$(LABEL:wb_mode)\\n$(LABEL:colortemp)K'),
+		status_tally: statusButton('Tally', 'TALLY\\n$(LABEL:tally)', [
+			{ feedbackId: 'tally', options: { value: 'Red steady' } },
+			{ feedbackId: 'tally', options: { value: 'Green steady' }, style: { bgcolor: combineRgb(0, 160, 0) } },
+		]),
+		status_tracking: statusButton('Auto tracking', 'TRACK\\n$(LABEL:tracking)', [
+			{ feedbackId: 'tracking', options: { value: 'On' } },
+		]),
 		status_moving: statusButton('PTZ moving', 'PTZ\\nMOVING', [{ feedbackId: 'ptz_moving', options: {} }]),
 	}
 }
