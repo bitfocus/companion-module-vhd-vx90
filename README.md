@@ -38,10 +38,9 @@ Companion 5.0.4/5.1 (and any Companion version that accepts module API
 
 ## Installation
 
-See [INSTALL-TEST-GUIDE.md](./INSTALL-TEST-GUIDE.md) for the full
-install and first-test walkthrough. Short version: build/download the
-`.tgz` package and use **Modules → Import module package** in the
-Companion admin UI.
+Once released, add the module from Companion's **Connections** page
+(search for "VHD VX-90"). To test a local build, run `yarn build` and use
+**Modules → Import module package** in the Companion admin UI.
 
 ## Development
 

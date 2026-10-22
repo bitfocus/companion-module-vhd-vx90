@@ -6,6 +6,8 @@ const { getFeedbackDefinitions } = require('./feedbacks')
 const { getPresetDefinitions } = require('./presets')
 const { COLOR_MATRIX_AXES, COLOR_MATRIX_NEUTRAL } = require('./visca')
 
+const CONNECT_TIMEOUT_MS = 5000
+
 class VX90Instance extends InstanceBase {
 	constructor(internal) {
 		super(internal)
@@ -13,6 +15,7 @@ class VX90Instance extends InstanceBase {
 		this.reconnectTimer = null
 		this.connected = false
 		this.badConfig = false
+		this.lastError = null
 		// The colour matrix has no native up/down command, so the module tracks
 		// the last value it set per axis (seeded to neutral) to support stepping.
 		this.colorMatrixHue = {}
@@ -134,44 +137,84 @@ class VX90Instance extends InstanceBase {
 		]
 	}
 
+	/** Connection state changed: refresh every button that uses the `connected` feedback. */
+	setConnected(value) {
+		this.connected = value
+		this.checkFeedbacks('connected')
+	}
+
+	/** Tear down the current socket (if any) without touching a pending reconnect timer. */
+	destroySocket() {
+		if (!this.socket) return
+		const socket = this.socket
+		this.socket = null
+		socket.removeAllListeners()
+		// A destroyed socket can still emit a late 'error'; swallow it so it never crashes the module.
+		socket.on('error', () => {})
+		try {
+			socket.destroy()
+		} catch (e) {
+			// ignore
+		}
+	}
+
 	initConnection() {
+		// A reconnect must never leave the previous socket and its listeners behind.
+		this.destroySocket()
+
 		if (!this.config?.host) {
 			this.badConfig = true
+			this.setConnected(false)
 			this.updateStatus(InstanceStatus.BadConfig, 'No camera IP configured')
 			return
 		}
 		this.badConfig = false
+		this.lastError = null
 
-		this.socket = new net.Socket()
+		const socket = new net.Socket()
+		this.socket = socket
 
-		this.socket.on('connect', () => {
-			this.connected = true
+		// Without this, an unreachable IP keeps the status on "Connecting" for the OS TCP timeout
+		// (often more than a minute) and the 5 s reconnect never runs.
+		socket.setTimeout(CONNECT_TIMEOUT_MS)
+
+		socket.on('connect', () => {
+			socket.setTimeout(0) // the timeout is for connecting only, not for idle connections
+			this.lastError = null
+			this.setConnected(true)
 			this.updateStatus(InstanceStatus.Ok)
 			this.setVariableValues({ connection_status: 'Connected' })
 		})
 
-		this.socket.on('error', (err) => {
-			this.connected = false
+		socket.on('timeout', () => {
+			// destroy(err) emits 'error' and then 'close', so the normal error/reconnect path runs.
+			socket.destroy(new Error(`Connection timed out after ${CONNECT_TIMEOUT_MS / 1000} s`))
+		})
+
+		socket.on('error', (err) => {
+			this.lastError = err.message
+			this.setConnected(false)
 			this.updateStatus(InstanceStatus.ConnectionFailure, err.message)
 			this.setVariableValues({ connection_status: 'Error: ' + err.message })
 			this.scheduleReconnect()
 		})
 
-		this.socket.on('close', () => {
-			this.connected = false
-			if (!this.badConfig) {
+		socket.on('close', () => {
+			this.setConnected(false)
+			// Node emits 'close' right after 'error'; keep the error message visible in that case.
+			if (!this.badConfig && !this.lastError) {
 				this.updateStatus(InstanceStatus.Disconnected)
 				this.setVariableValues({ connection_status: 'Disconnected' })
 			}
 			this.scheduleReconnect()
 		})
 
-		this.socket.on('data', (data) => {
+		socket.on('data', (data) => {
 			// VISCA ACK/completion/error packets could be parsed here if needed later.
 			this.log('debug', 'RX: ' + data.toString('hex'))
 		})
 
-		this.socket.connect(this.config.port || 5678, this.config.host)
+		socket.connect(this.config.port || 5678, this.config.host)
 	}
 
 	scheduleReconnect() {
@@ -187,15 +230,8 @@ class VX90Instance extends InstanceBase {
 			clearTimeout(this.reconnectTimer)
 			this.reconnectTimer = null
 		}
-		if (this.socket) {
-			this.socket.removeAllListeners()
-			try {
-				this.socket.destroy()
-			} catch (e) {
-				// ignore
-			}
-			this.socket = null
-		}
+		this.destroySocket()
+		this.setConnected(false)
 	}
 
 	/** Send a pre-built VISCA Buffer to the camera. */
@@ -205,7 +241,9 @@ class VX90Instance extends InstanceBase {
 			return
 		}
 		this.log('debug', 'TX: ' + buf.toString('hex'))
-		this.socket.write(buf)
+		this.socket.write(buf, (err) => {
+			if (err) this.log('error', 'Write failed: ' + err.message)
+		})
 	}
 
 	get viscaAddress() {

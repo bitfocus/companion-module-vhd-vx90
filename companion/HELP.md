@@ -45,6 +45,8 @@ VISCA module; this module implements them directly.
 
 ## Support
 
-Internal module built for AP Audiovisuele Producties. For questions
-about the underlying VISCA command set, see the VHD documentation or
-the technical contact at VHD.
+Module built by AP Audiovisuele Producties. Report problems or request
+features on the
+[issue tracker](https://github.com/bitfocus/companion-module-vhd-vx90/issues).
+For questions about the underlying VISCA command set, see the VHD
+documentation or the technical contact at VHD.

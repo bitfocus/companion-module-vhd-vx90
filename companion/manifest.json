@@ -12,7 +12,8 @@
 	"maintainers": [
 		{
 			"name": "AP Audiovisuele Producties",
-			"email": ""
+			"email": "projecten@audiovisueleproducties.be",
+			"github": "AP-dieterjanssens"
 		}
 	],
 	"runtime": {

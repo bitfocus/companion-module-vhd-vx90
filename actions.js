@@ -242,8 +242,8 @@ function getActionDefinitions(instance) {
 	actions.osd_exit_two = simple('OSD Exit (alt)', [0x01, 0x06, 0x06, 0x06])
 
 	// ---------- PAN/TILT ----------
-	const panSpeedOpt = { id: 'panSpeed', type: 'number', label: 'Pan speed (0-24)', min: 0, max: 24, default: 12 }
-	const tiltSpeedOpt = { id: 'tiltSpeed', type: 'number', label: 'Tilt speed (0-20)', min: 0, max: 20, default: 10 }
+	const panSpeedOpt = { id: 'panSpeed', type: 'number', label: 'Pan speed (1-24)', min: 1, max: 24, default: 12 }
+	const tiltSpeedOpt = { id: 'tiltSpeed', type: 'number', label: 'Tilt speed (1-20)', min: 1, max: 20, default: 10 }
 
 	const ptMove = (name, dirBytes) => ({
 		name,
@@ -288,7 +288,6 @@ function getActionDefinitions(instance) {
 	}
 	actions.pt_home = simple('Pan/Tilt: Home', [0x01, 0x06, 0x04])
 	actions.pt_reset = simple('Pan/Tilt: Reset', [0x01, 0x06, 0x05])
-	actions.pt_lr_reverse = onOff('Pan/Tilt: LR Reverse', [0x01, 0x04, 0x61])
 
 	// ---------- ZOOM ----------
 	actions.zoom_stop = simple('Zoom: Stop', [0x01, 0x04, 0x07, 0x00])
@@ -433,8 +432,8 @@ function getActionDefinitions(instance) {
 		name: 'Preset: PTZ Speed on Recall [VHD-ext]',
 		options: [
 			{ id: 'zoomSpeed', type: 'number', label: 'Zoom speed (0-7)', min: 0, max: 7, default: 4 },
-			{ id: 'panSpeed', type: 'number', label: 'Pan speed', min: 0, max: 24, default: 12 },
-			{ id: 'tiltSpeed', type: 'number', label: 'Tilt speed', min: 0, max: 20, default: 10 },
+			{ id: 'panSpeed', type: 'number', label: 'Pan speed', min: 1, max: 24, default: 12 },
+			{ id: 'tiltSpeed', type: 'number', label: 'Tilt speed', min: 1, max: 20, default: 10 },
 			{ id: 'preset', type: 'number', label: 'Preset number (0-254)', min: 0, max: 254, default: 0 },
 		],
 		callback: (event) =>

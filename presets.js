@@ -61,7 +61,13 @@ function getPresetDefinitions(instance) {
 			name: 'Connection status',
 			style: { ...basicStyle, text: 'VX90\\n$(vhd-vx90:connection_status)' },
 			steps: [{ down: [], up: [] }],
-			feedbacks: [{ feedbackId: 'connected', options: {} }],
+			feedbacks: [
+				{
+					feedbackId: 'connected',
+					options: {},
+					style: { bgcolor: combineRgb(0, 200, 0), color: combineRgb(0, 0, 0) },
+				},
+			],
 		},
 	}
 }
