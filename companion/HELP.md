@@ -19,7 +19,7 @@ Sony's public VISCA specification (which is why the generic Bitfocus
 and presets on this camera).
 
 A number of actions are marked **[VHD-ext]** in their name — these use
-command bytes that are specific to VHD and are *not* part of Sony's
+command bytes that are specific to VHD and are _not_ part of Sony's
 public VISCA spec (mostly under command category `0x0A`/`0x0B`, one
 under the unusual `0x2A`). These will not work through a generic Sony
 VISCA module; this module implements them directly.

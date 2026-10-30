@@ -166,6 +166,7 @@ class VX90Instance extends InstanceBase {
 			this.badConfig = true
 			this.setConnected(false)
 			this.updateStatus(InstanceStatus.BadConfig, 'No camera IP configured')
+			this.setVariableValues({ connection_status: 'No camera IP configured' })
 			return
 		}
 		this.badConfig = false
@@ -234,16 +235,17 @@ class VX90Instance extends InstanceBase {
 		this.setConnected(false)
 	}
 
-	/** Send a pre-built VISCA Buffer to the camera. */
+	/** Send a pre-built VISCA Buffer to the camera. Returns true when it was written, false when it was dropped (not connected). */
 	sendBuffer(buf) {
 		if (!this.socket || !this.connected) {
 			this.log('warn', 'Not connected, dropping command: ' + buf.toString('hex'))
-			return
+			return false
 		}
 		this.log('debug', 'TX: ' + buf.toString('hex'))
 		this.socket.write(buf, (err) => {
 			if (err) this.log('error', 'Write failed: ' + err.message)
 		})
+		return true
 	}
 
 	get viscaAddress() {

@@ -1,16 +1,24 @@
 {
-  "name": "companion-module-vhd-vx90",
-  "version": "1.2.1",
-  "main": "main.js",
-  "license": "MIT",
-  "type": "commonjs",
-  "dependencies": {
-    "@companion-module/base": "^1.11.0"
-  },
-  "devDependencies": {
-    "@companion-module/tools": "^2.6.1"
-  },
-  "scripts": {
-    "test": "echo \"no tests yet\""
-  }
+	"name": "companion-module-vhd-vx90",
+	"version": "1.2.2",
+	"main": "src/main.js",
+	"type": "commonjs",
+	"license": "MIT",
+	"scripts": {
+		"format": "prettier -w .",
+		"package": "companion-module-build"
+	},
+	"dependencies": {
+		"@companion-module/base": "~1.14.1"
+	},
+	"devDependencies": {
+		"@companion-module/tools": "^2.6.1",
+		"prettier": "^3.7.4"
+	},
+	"engines": {
+		"node": "^22.20",
+		"yarn": "^4"
+	},
+	"prettier": "@companion-module/tools/.prettierrc.json",
+	"packageManager": "yarn@4.12.0"
 }

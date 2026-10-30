@@ -69,19 +69,21 @@ function getActionDefinitions(instance) {
 		callback: (event) => send([...prefixBytes, event.options.value === 'on' ? onByte : offByte]),
 	})
 
-	const speedChoices = (max, label = 'Speed') =>
-		Array.from({ length: max + 1 }, (_, i) => ({ id: i.toString(16), label: `${label} ${i}` }))
-
 	const actions = {}
 
 	// ---------- EXPOSURE ----------
-	actions.exposure_mode = choiceAction('Exposure: Mode', [0x01, 0x04, 0x39], [
-		{ id: '0', label: 'Auto' },
-		{ id: '3', label: 'Manual' },
-		{ id: 'a', label: 'Shutter priority (SAE)' },
-		{ id: 'b', label: 'Iris priority (AAE)' },
-		{ id: 'd', label: 'Bright' },
-	], '0')
+	actions.exposure_mode = choiceAction(
+		'Exposure: Mode',
+		[0x01, 0x04, 0x39],
+		[
+			{ id: '0', label: 'Auto' },
+			{ id: '3', label: 'Manual' },
+			{ id: 'a', label: 'Shutter priority (SAE)' },
+			{ id: 'b', label: 'Iris priority (AAE)' },
+			{ id: 'd', label: 'Bright' },
+		],
+		'0',
+	)
 	actions.exposure_comp_mode = onOff('Exposure: Compensation On/Off', [0x01, 0x04, 0x3e])
 	actions.exposure_comp_direct = {
 		// Table: "0(-7) to 7(0) to E(7)" -> transmitted nibble = value + 7
@@ -96,44 +98,66 @@ function getActionDefinitions(instance) {
 	actions.gain_limit_reset = simple('Gain Limit Reset [VHD-ext]', [0x0a, 0x11, 0x24, 0x00])
 	actions.gain_limit_up = simple('Gain Limit Up [VHD-ext]', [0x0a, 0x11, 0x24, 0x02])
 	actions.gain_limit_down = simple('Gain Limit Down [VHD-ext]', [0x0a, 0x11, 0x24, 0x03])
-	actions.metering_mode = choiceAction('Metering Mode', [0x01, 0x04, 0x3a], [
-		{ id: '0', label: 'Average' },
-		{ id: '1', label: 'Center' },
-		{ id: '2', label: 'Smart' },
-		{ id: '3', label: 'Top' },
-	], '0')
+	actions.metering_mode = choiceAction(
+		'Metering Mode',
+		[0x01, 0x04, 0x3a],
+		[
+			{ id: '0', label: 'Average' },
+			{ id: '1', label: 'Center' },
+			{ id: '2', label: 'Smart' },
+			{ id: '3', label: 'Top' },
+		],
+		'0',
+	)
 	actions.backlight = onOff('Backlight Compensation', [0x01, 0x04, 0x33])
 	actions.drc_direct = numberAction('DRC (0-8)', [0x01, 0x04, 0x25, 0x00, 0x00, 0x00], 0, 8, 0, 1)
 	actions.drc_reset = simple('DRC Reset', [0x01, 0x04, 0x25, 0x00])
 	actions.drc_up = simple('DRC Up', [0x01, 0x04, 0x25, 0x02])
 	actions.drc_down = simple('DRC Down', [0x01, 0x04, 0x25, 0x03])
-	actions.anti_flicker = choiceAction('Anti-Flicker', [0x01, 0x04, 0x23], [
-		{ id: '0', label: 'Off' },
-		{ id: '1', label: '50Hz' },
-		{ id: '2', label: '60Hz' },
-	], '1')
-	actions.shutter_direct = numberAction('Shutter Position (0-17, table\'s 0x00-0x11)', [0x01, 0x04, 0x4a, 0x00, 0x00], 0, 0x11, 0, 2)
+	actions.anti_flicker = choiceAction(
+		'Anti-Flicker',
+		[0x01, 0x04, 0x23],
+		[
+			{ id: '0', label: 'Off' },
+			{ id: '1', label: '50Hz' },
+			{ id: '2', label: '60Hz' },
+		],
+		'1',
+	)
+	actions.shutter_direct = numberAction(
+		"Shutter Position (0-17, table's 0x00-0x11)",
+		[0x01, 0x04, 0x4a, 0x00, 0x00],
+		0,
+		0x11,
+		0,
+		2,
+	)
 	actions.shutter_reset = simple('Shutter Reset', [0x01, 0x04, 0x0a, 0x00])
 	actions.shutter_up = simple('Shutter Up', [0x01, 0x04, 0x0a, 0x02])
 	actions.shutter_down = simple('Shutter Down', [0x01, 0x04, 0x0a, 0x03])
-	actions.iris_direct = choiceAction('Iris: Set F-stop', [0x01, 0x04, 0x4b, 0x00, 0x00, 0x00], [
-		{ id: '0', label: 'Close' },
-		{ id: '1', label: 'F11.0' },
-		{ id: '2', label: 'F9.6' },
-		{ id: '3', label: 'F8.0' },
-		{ id: '4', label: 'F7.3' },
-		{ id: '5', label: 'F6.8' },
-		{ id: '6', label: 'F6.2' },
-		{ id: '7', label: 'F5.6' },
-		{ id: '8', label: 'F5.2' },
-		{ id: '9', label: 'F4.8' },
-		{ id: 'a', label: 'F4.4' },
-		{ id: 'b', label: 'F4.0' },
-		{ id: 'c', label: 'F3.7' },
-		{ id: 'd', label: 'F3.4' },
-		{ id: 'e', label: 'F3.1' },
-		{ id: 'f', label: 'F2.8' },
-	], '7')
+	actions.iris_direct = choiceAction(
+		'Iris: Set F-stop',
+		[0x01, 0x04, 0x4b, 0x00, 0x00, 0x00],
+		[
+			{ id: '0', label: 'Close' },
+			{ id: '1', label: 'F11.0' },
+			{ id: '2', label: 'F9.6' },
+			{ id: '3', label: 'F8.0' },
+			{ id: '4', label: 'F7.3' },
+			{ id: '5', label: 'F6.8' },
+			{ id: '6', label: 'F6.2' },
+			{ id: '7', label: 'F5.6' },
+			{ id: '8', label: 'F5.2' },
+			{ id: '9', label: 'F4.8' },
+			{ id: 'a', label: 'F4.4' },
+			{ id: 'b', label: 'F4.0' },
+			{ id: 'c', label: 'F3.7' },
+			{ id: 'd', label: 'F3.4' },
+			{ id: 'e', label: 'F3.1' },
+			{ id: 'f', label: 'F2.8' },
+		],
+		'7',
+	)
 	actions.iris_reset = simple('Iris Reset', [0x01, 0x04, 0x0b, 0x00])
 	actions.iris_up = simple('Iris Up (open)', [0x01, 0x04, 0x0b, 0x02])
 	actions.iris_down = simple('Iris Down (close)', [0x01, 0x04, 0x0b, 0x03])
@@ -145,29 +169,38 @@ function getActionDefinitions(instance) {
 	actions.bright_reset = simple('Bright Reset', [0x01, 0x04, 0x0d, 0x00])
 	actions.bright_up = simple('Bright Up', [0x01, 0x04, 0x0d, 0x02])
 	actions.bright_down = simple('Bright Down', [0x01, 0x04, 0x0d, 0x03])
-	actions.nd_mode = choiceAction('ND Filter Mode [VHD-ext, differs from Sony]', [0x0a, 0x01, 0x07], [
-		{ id: '0', label: 'Off' },
-		{ id: '1', label: '1/4' },
-		{ id: '2', label: '1/16' },
-		{ id: '3', label: '1/64' },
-	], '0')
+	actions.nd_mode = choiceAction(
+		'ND Filter Mode [VHD-ext, differs from Sony]',
+		[0x0a, 0x01, 0x07],
+		[
+			{ id: '0', label: 'Off' },
+			{ id: '1', label: '1/4' },
+			{ id: '2', label: '1/16' },
+			{ id: '3', label: '1/64' },
+		],
+		'0',
+	)
 	actions.night_mode = onOff('Night Mode [VHD-ext]', [0x0a, 0x01, 0x08], 0x01, 0x00)
 
 	// ---------- COLOR ----------
-	actions.wb_mode = choiceAction('White Balance Mode', [0x01, 0x04, 0x35], [
-		{ id: '00', label: 'Auto' },
-		{ id: '01', label: 'Indoor' },
-		{ id: '02', label: 'Outdoor' },
-		{ id: '03', label: 'One Push' },
-		{ id: '05', label: 'Manual' },
-		{ id: '20', label: 'VAR (color temperature)' },
-	], '00')
+	actions.wb_mode = choiceAction(
+		'White Balance Mode',
+		[0x01, 0x04, 0x35],
+		[
+			{ id: '00', label: 'Auto' },
+			{ id: '01', label: 'Indoor' },
+			{ id: '02', label: 'Outdoor' },
+			{ id: '03', label: 'One Push' },
+			{ id: '05', label: 'Manual' },
+			{ id: '20', label: 'VAR (color temperature)' },
+		],
+		'00',
+	)
 	// Table: "00(-10) to 0A(0) to 14(10)" -> transmitted byte-pair = value + 10
 	const tuningAction = (name, opcode) => ({
 		name,
 		options: [{ id: 'value', type: 'number', label: name, min: -10, max: 10, default: 0 }],
-		callback: (event) =>
-			send([0x01, 0x04, opcode, 0x00, 0x00, ...nibbleBytes(Number(event.options.value) + 10, 2)]),
+		callback: (event) => send([0x01, 0x04, opcode, 0x00, 0x00, ...nibbleBytes(Number(event.options.value) + 10, 2)]),
 	})
 	actions.rg_tuning = tuningAction('RG Tuning (-10..10)', 0x12)
 	actions.bg_tuning = tuningAction('BG Tuning (-10..10)', 0x13)
@@ -202,30 +235,45 @@ function getActionDefinitions(instance) {
 	actions.sharpness_up = simple('Sharpness Up', [0x01, 0x04, 0x02, 0x02])
 	actions.sharpness_down = simple('Sharpness Down', [0x01, 0x04, 0x02, 0x03])
 	actions.bw_mode = onOff('Black & White Mode', [0x01, 0x04, 0x63], 0x04, 0x00)
-	actions.flip = choiceAction('Flip', [0x01, 0x04, 0xa4], [
-		{ id: '0', label: 'Off' },
-		{ id: '1', label: 'Flip-H' },
-		{ id: '2', label: 'Flip-V' },
-		{ id: '3', label: 'Flip-HV' },
-	], '0')
+	actions.flip = choiceAction(
+		'Flip',
+		[0x01, 0x04, 0xa4],
+		[
+			{ id: '0', label: 'Off' },
+			{ id: '1', label: 'Flip-H' },
+			{ id: '2', label: 'Flip-V' },
+			{ id: '3', label: 'Flip-HV' },
+		],
+		'0',
+	)
 	actions.flip_h = onOff('Horizontal Flip (LR Reverse)', [0x01, 0x04, 0x61])
 	actions.flip_v = onOff('Vertical Flip', [0x01, 0x04, 0x66])
-	actions.gamma = choiceAction('Gamma', [0x01, 0x04, 0x5b], [
-		{ id: '0', label: 'Default' },
-		{ id: '1', label: '0.45' },
-		{ id: '2', label: '0.5' },
-		{ id: '3', label: '0.56' },
-		{ id: '4', label: 'EXT' },
-		{ id: '5', label: 'PC' },
-	], '0')
-	actions.image_style = choiceAction('Image Style [VHD-ext, differs from Sony]', [0x0a, 0x01, 0x1c], [
-		{ id: '00', label: 'Default' },
-		{ id: '01', label: 'Norm' },
-		{ id: '04', label: 'Bright' },
-		{ id: '05', label: 'Soft' },
-		{ id: '09', label: 'PC' },
-		{ id: '10', label: 'Blacklight' },
-	], '00')
+	actions.gamma = choiceAction(
+		'Gamma',
+		[0x01, 0x04, 0x5b],
+		[
+			{ id: '0', label: 'Default' },
+			{ id: '1', label: '0.45' },
+			{ id: '2', label: '0.5' },
+			{ id: '3', label: '0.56' },
+			{ id: '4', label: 'EXT' },
+			{ id: '5', label: 'PC' },
+		],
+		'0',
+	)
+	actions.image_style = choiceAction(
+		'Image Style [VHD-ext, differs from Sony]',
+		[0x0a, 0x01, 0x1c],
+		[
+			{ id: '00', label: 'Default' },
+			{ id: '01', label: 'Norm' },
+			{ id: '04', label: 'Bright' },
+			{ id: '05', label: 'Soft' },
+			{ id: '09', label: 'PC' },
+			{ id: '10', label: 'Blacklight' },
+		],
+		'00',
+	)
 
 	// ---------- NOISE REDUCTION ----------
 	actions.nr3d_level = {
@@ -349,17 +397,27 @@ function getActionDefinitions(instance) {
 	actions.focus_mode_manual = simple('Focus: Manual', [0x01, 0x04, 0x38, 0x03])
 	actions.focus_onepush = simple('Focus: One-push Trigger', [0x01, 0x04, 0x38, 0x04])
 	actions.focus_mode_toggle = simple('Focus: Auto/Manual Toggle', [0x01, 0x04, 0x38, 0x10])
-	actions.af_zone = choiceAction('Focus: AF Zone', [0x01, 0x04, 0xaa], [
-		{ id: '0', label: 'Top' },
-		{ id: '1', label: 'Center' },
-		{ id: '2', label: 'Bottom' },
-		{ id: '3', label: 'Front' },
-	], '1')
-	actions.af_sense = choiceAction('Focus: AF Sensitivity', [0x01, 0x04, 0x58], [
-		{ id: '1', label: 'High' },
-		{ id: '2', label: 'Normal' },
-		{ id: '3', label: 'Low' },
-	], '2')
+	actions.af_zone = choiceAction(
+		'Focus: AF Zone',
+		[0x01, 0x04, 0xaa],
+		[
+			{ id: '0', label: 'Top' },
+			{ id: '1', label: 'Center' },
+			{ id: '2', label: 'Bottom' },
+			{ id: '3', label: 'Front' },
+		],
+		'1',
+	)
+	actions.af_sense = choiceAction(
+		'Focus: AF Sensitivity',
+		[0x01, 0x04, 0x58],
+		[
+			{ id: '1', label: 'High' },
+			{ id: '2', label: 'Normal' },
+			{ id: '3', label: 'Low' },
+		],
+		'2',
+	)
 	actions.focus_lock = simple('Focus: Lock [VHD-ext]', [0x0a, 0x04, 0x68, 0x02])
 	actions.focus_unlock = simple('Focus: Unlock [VHD-ext]', [0x0a, 0x04, 0x68, 0x03])
 
@@ -393,8 +451,7 @@ function getActionDefinitions(instance) {
 				],
 			},
 		],
-		callback: (event) =>
-			send([0x0a, 0x02, 0x02, parseInt(event.options.mode, 16), parseInt(event.options.color, 16)]),
+		callback: (event) => send([0x0a, 0x02, 0x02, parseInt(event.options.mode, 16), parseInt(event.options.color, 16)]),
 	}
 	actions.tally_simple = {
 		name: 'Tally: Simple colour (shares Sony opcode)',
@@ -413,12 +470,17 @@ function getActionDefinitions(instance) {
 		],
 		callback: (event) => send([0x01, 0x7e, 0x01, 0x0a, 0x00, parseInt(event.options.value, 16)]),
 	}
-	actions.tally_brightness = choiceAction('Tally: Brightness [VHD-ext]', [0x0a, 0x02, 0x03], [
-		{ id: '0', label: 'Low' },
-		{ id: '1', label: 'Medium' },
-		{ id: '2', label: 'High' },
-		{ id: '4', label: 'Off' },
-	], '1')
+	actions.tally_brightness = choiceAction(
+		'Tally: Brightness [VHD-ext]',
+		[0x0a, 0x02, 0x03],
+		[
+			{ id: '0', label: 'Low' },
+			{ id: '1', label: 'Medium' },
+			{ id: '2', label: 'High' },
+			{ id: '4', label: 'Off' },
+		],
+		'1',
+	)
 
 	// ---------- PRESET ----------
 	actions.preset_set = byteAction('Preset: Set (0-254)', [0x01, 0x04, 0x3f, 0x01], 0, 254, 0)
@@ -450,34 +512,59 @@ function getActionDefinitions(instance) {
 	}
 
 	// ---------- AUDIO ----------
-	actions.audio_input = choiceAction('Audio Input (restart required) [VHD-ext, unusual category 0x2A]', [0x2a, 0x01, 0x1b], [
-		{ id: '2', label: 'Line In' },
-		{ id: '3', label: 'Mic' },
-		{ id: '4', label: 'XLR' },
-	], '2')
+	actions.audio_input = choiceAction(
+		'Audio Input (restart required) [VHD-ext, unusual category 0x2A]',
+		[0x2a, 0x01, 0x1b],
+		[
+			{ id: '2', label: 'Line In' },
+			{ id: '3', label: 'Mic' },
+			{ id: '4', label: 'XLR' },
+		],
+		'2',
+	)
 
 	// ---------- TRACKING ----------
 	actions.track_enable = onOff('Tracking: Enable [VHD-ext, no Sony equivalent]', [0x0a, 0x11, 0x54])
-	actions.track_mode = choiceAction('Tracking: Mode [VHD-ext, no Sony equivalent]', [0x0a, 0x01, 0x04, 0x1c], [
-		{ id: '3', label: 'Presenter' },
-		{ id: '4', label: 'Zone' },
-		{ id: '5', label: 'Frame' },
-	], '3')
-	actions.track_humanoid_frame = choiceAction('Tracking: Humanoid Frame [VHD-ext]', [0x0a, 0x11, 0x56], [
-		{ id: '3', label: 'Off' },
-		{ id: '4', label: 'Default' },
-	], '3')
-	actions.track_target_select = choiceAction('Tracking: Target Selection [VHD-ext]', [0x0a, 0x11, 0xa3], [
-		{ id: '2', label: 'Left' },
-		{ id: '3', label: 'Right' },
-		{ id: '4', label: 'OK' },
-	], '4')
-	actions.track_figure_size = choiceAction('Tracking: Figure Size [VHD-ext]', [0x0a, 0x0f, 0x01, 0x00], [
-		{ id: '0', label: 'Full' },
-		{ id: '1', label: 'Half Body' },
-		{ id: '2', label: 'Close Up' },
-		{ id: '3', label: 'Custom' },
-	], '0')
+	actions.track_mode = choiceAction(
+		'Tracking: Mode [VHD-ext, no Sony equivalent]',
+		[0x0a, 0x01, 0x04, 0x1c],
+		[
+			{ id: '3', label: 'Presenter' },
+			{ id: '4', label: 'Zone' },
+			{ id: '5', label: 'Frame' },
+		],
+		'3',
+	)
+	actions.track_humanoid_frame = choiceAction(
+		'Tracking: Humanoid Frame [VHD-ext]',
+		[0x0a, 0x11, 0x56],
+		[
+			{ id: '3', label: 'Off' },
+			{ id: '4', label: 'Default' },
+		],
+		'3',
+	)
+	actions.track_target_select = choiceAction(
+		'Tracking: Target Selection [VHD-ext]',
+		[0x0a, 0x11, 0xa3],
+		[
+			{ id: '2', label: 'Left' },
+			{ id: '3', label: 'Right' },
+			{ id: '4', label: 'OK' },
+		],
+		'4',
+	)
+	actions.track_figure_size = choiceAction(
+		'Tracking: Figure Size [VHD-ext]',
+		[0x0a, 0x0f, 0x01, 0x00],
+		[
+			{ id: '0', label: 'Full' },
+			{ id: '1', label: 'Half Body' },
+			{ id: '2', label: 'Close Up' },
+			{ id: '3', label: 'Custom' },
+		],
+		'0',
+	)
 	actions.track_zoom_tele_std = simple('Tracking Zoom: Tele (standard) [VHD-ext]', [0x0a, 0x04, 0x07, 0x02, 0x01])
 	actions.track_zoom_wide_std = simple('Tracking Zoom: Wide (standard) [VHD-ext]', [0x0a, 0x04, 0x07, 0x03, 0x01])
 	actions.track_zoom_tele_var = {
@@ -497,13 +584,7 @@ function getActionDefinitions(instance) {
 			{ id: 'position', type: 'number', label: 'Zoom position', min: 0, max: 0xffff, default: 0 },
 		],
 		callback: (event) =>
-			send([
-				0x0a,
-				0x04,
-				0x47,
-				Number(event.options.speed) & 0xff,
-				...nibbleBytes(Number(event.options.position), 4),
-			]),
+			send([0x0a, 0x04, 0x47, Number(event.options.speed) & 0xff, ...nibbleBytes(Number(event.options.position), 4)]),
 	}
 
 	// ---------- MOTION SYNC ----------
@@ -512,12 +593,17 @@ function getActionDefinitions(instance) {
 	// ---------- SYSTEM ----------
 	actions.power = onOff('Power', [0x01, 0x04, 0x00])
 	actions.restart = simple('Restart Camera [VHD-ext]', [0x0b, 0x01, 0xaa])
-	actions.ir_address = choiceAction('IR Remote Address [VHD-ext]', [0x0a, 0x11, 0xa7], [
-		{ id: '1', label: 'Address 1' },
-		{ id: '2', label: 'Address 2' },
-		{ id: '3', label: 'Address 3' },
-		{ id: '4', label: 'Address 4' },
-	], '1')
+	actions.ir_address = choiceAction(
+		'IR Remote Address [VHD-ext]',
+		[0x0a, 0x11, 0xa7],
+		[
+			{ id: '1', label: 'Address 1' },
+			{ id: '2', label: 'Address 2' },
+			{ id: '3', label: 'Address 3' },
+			{ id: '4', label: 'Address 4' },
+		],
+		'1',
+	)
 	actions.setting_reset = simple('Restore Menu Defaults', [0x01, 0x04, 0xa0, 0x10])
 	actions.net_reset = simple('Factory Reset IP + Password [VHD-ext]', [0x0a, 0x01, 0xaa])
 
@@ -579,7 +665,15 @@ function getActionDefinitions(instance) {
 						{ id: 'manual', label: 'Manual (set % below)' },
 					],
 				},
-				{ id: 'pwm', type: 'number', label: 'Manual speed (% PWM)', min: 0, max: 100, default: 50, isVisible: (o) => o.mode === 'manual' },
+				{
+					id: 'pwm',
+					type: 'number',
+					label: 'Manual speed (% PWM)',
+					min: 0,
+					max: 100,
+					default: 50,
+					isVisibleExpression: "$(options:mode) == 'manual'",
+				},
 			],
 			callback: (event) => {
 				const fan = parseInt(event.options.fan, 16)
@@ -593,15 +687,17 @@ function getActionDefinitions(instance) {
 		// The camera has no native up/down for this, so the module remembers the
 		// last value it set per axis (instance.colorMatrixHue, seeded to 32) and
 		// always sends an absolute value. Each set also updates a Companion
-		// variable (e.g. $(vhd-vx90:cmatrix_red)).
+		// variable (e.g. $(<connection label>:cmatrix_red)).
 		// NOTE: the axis->colour order is the most likely mapping but is not yet
 		// confirmed against VHD's documentation; verify on a real camera.
 		const axisChoices = COLOR_MATRIX_AXES.map((a) => ({ id: a.id, label: a.label }))
 		const axisVarId = Object.fromEntries(COLOR_MATRIX_AXES.map((a) => [a.id, a.varId]))
 		const setColorMatrix = (axisId, value) => {
 			const v = clamp(value, COLOR_MATRIX_MIN, COLOR_MATRIX_MAX)
+			// Only remember the new value when the camera really got the command, otherwise
+			// the stored hue (and the variable) would drift while the camera is offline.
+			if (!send([0x0a, 0x89, parseInt(axisId, 16), v & 0xff])) return instance.colorMatrixHue[axisId]
 			instance.colorMatrixHue[axisId] = v
-			send([0x0a, 0x89, parseInt(axisId, 16), v & 0xff])
 			if (axisVarId[axisId]) instance.setVariableValues({ [axisVarId[axisId]]: v })
 			return v
 		}
@@ -610,7 +706,14 @@ function getActionDefinitions(instance) {
 			name: '[V8.1.97+] Colour Matrix: set hue (absolute 0-64, verify axis order)',
 			options: [
 				{ id: 'axis', type: 'dropdown', label: 'Colour axis (order to confirm)', default: '0', choices: axisChoices },
-				{ id: 'hue', type: 'number', label: 'Hue (0-64, 32=neutral)', min: COLOR_MATRIX_MIN, max: COLOR_MATRIX_MAX, default: COLOR_MATRIX_NEUTRAL },
+				{
+					id: 'hue',
+					type: 'number',
+					label: 'Hue (0-64, 32=neutral)',
+					min: COLOR_MATRIX_MIN,
+					max: COLOR_MATRIX_MAX,
+					default: COLOR_MATRIX_NEUTRAL,
+				},
 			],
 			callback: (event) => setColorMatrix(event.options.axis, Number(event.options.hue)),
 		}
@@ -681,10 +784,15 @@ function getActionDefinitions(instance) {
 
 		// ---------- PAN/TILT speed step ----------
 		// 81 01 06 45 pp FF. pp 0x08 = standard (24 steps), 0x18 = extended (96 steps).
-		actions.pt_speed_step = choiceAction('[V8.1.97+] Pan/Tilt: Speed Step', [0x01, 0x06, 0x45], [
-			{ id: '8', label: 'Standard (24 steps)' },
-			{ id: '18', label: 'Extended (96 steps)' },
-		], '8')
+		actions.pt_speed_step = choiceAction(
+			'[V8.1.97+] Pan/Tilt: Speed Step',
+			[0x01, 0x06, 0x45],
+			[
+				{ id: '8', label: 'Standard (24 steps)' },
+				{ id: '18', label: 'Extended (96 steps)' },
+			],
+			'8',
+		)
 
 		// ---------- PAN/TILT ramp curve ----------
 		// 81 01 06 31 pp FF. pp is passed through to the motor layer; exact range

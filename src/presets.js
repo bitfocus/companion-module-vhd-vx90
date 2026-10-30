@@ -40,9 +40,7 @@ function getPresetDefinitions(instance) {
 			category: 'Zoom',
 			name: 'Zoom In',
 			style: { ...basicStyle, text: 'Zoom\\nTele' },
-			steps: [
-				{ down: [{ actionId: 'zoom_tele_std', options: {} }], up: [{ actionId: 'zoom_stop', options: {} }] },
-			],
+			steps: [{ down: [{ actionId: 'zoom_tele_std', options: {} }], up: [{ actionId: 'zoom_stop', options: {} }] }],
 			feedbacks: [],
 		},
 		zoom_out: {
@@ -50,16 +48,14 @@ function getPresetDefinitions(instance) {
 			category: 'Zoom',
 			name: 'Zoom Out',
 			style: { ...basicStyle, text: 'Zoom\\nWide' },
-			steps: [
-				{ down: [{ actionId: 'zoom_wide_std', options: {} }], up: [{ actionId: 'zoom_stop', options: {} }] },
-			],
+			steps: [{ down: [{ actionId: 'zoom_wide_std', options: {} }], up: [{ actionId: 'zoom_stop', options: {} }] }],
 			feedbacks: [],
 		},
 		connection_status: {
 			type: 'button',
 			category: 'Status',
 			name: 'Connection status',
-			style: { ...basicStyle, text: 'VX90\\n$(vhd-vx90:connection_status)' },
+			style: { ...basicStyle, text: `VX90\\n$(${instance.label}:connection_status)` },
 			steps: [{ down: [], up: [] }],
 			feedbacks: [
 				{

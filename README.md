@@ -15,7 +15,7 @@ motion sync, audio input selection).
 The module config has a **Camera firmware** dropdown:
 
 - **V8.1.92 and older** — the classic command set only.
-- **V8.1.97 and newer** — the classic set *plus* the commands that only
+- **V8.1.97 and newer** — the classic set _plus_ the commands that only
   exist in firmware V8.1.97, shown with a `[V8.1.97+]` prefix:
   - Zoom: tele/wide at a fine speed (below the classic slowest step)
   - Colour temperature: direct in Kelvin (2500–8000 K)
@@ -24,7 +24,7 @@ The module config has a **Camera firmware** dropdown:
   - Preset: store image parameters with presets
   - Pan/Tilt: speed step (standard/extended) and ramp curve
 
-The classic set works on both firmwares, so selecting V8.1.97 only *adds*
+The classic set works on both firmwares, so selecting V8.1.97 only _adds_
 actions. These V8.1.97 byte layouts were confirmed by comparing the
 V8.1.97 and V8.1.92 firmware; a few parameters (colour-matrix axis order,
 ramp-curve range) are marked for verification against VHD's updated VISCA
@@ -45,12 +45,12 @@ Once released, add the module from Companion's **Connections** page
 ## Development
 
 ```
-npm install
-npm run build   # via @companion-module/tools, produces the .tgz package
+corepack enable
+yarn install
+yarn package   # via @companion-module/tools, produces the .tgz package
 ```
 
-Run `npx @companion-module/tools companion-module-check` to validate
-the manifest and module structure before submitting a new version.
+This repository uses yarn; don't commit a `package-lock.json`.
 
 ## License
 
